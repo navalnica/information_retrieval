@@ -16,7 +16,7 @@ def tokenize(text):
     return tokens
 
 
-def accuracy(titles_true, title_predictions, k=1):
+def accuracy(*, titles_true, title_predictions, k=1):
     """ Assert title_predictions are sorted descending. """
     assert len(titles_true) == len(title_predictions)
     acc = 0
@@ -25,7 +25,7 @@ def accuracy(titles_true, title_predictions, k=1):
     return acc / len(titles_true)
 
 
-def mean_reciprocal_rank(titles_true, title_predictions, k=1):
+def mean_reciprocal_rank(*, titles_true, title_predictions, k=1):
     """ Assert title_predictions are sorted descending. """
     assert len(titles_true) == len(title_predictions)
     rr = 0
