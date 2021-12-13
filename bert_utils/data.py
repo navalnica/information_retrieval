@@ -1,35 +1,13 @@
 import math
 import random
 
-from typing import List, Union, Callable
 import pandas as pd
+from typing import List, Union, Callable
 
 from torch.utils.data import Dataset
 from sentence_transformers.readers import InputExample
 
-def foo():
-    print('foo')
-
-def get_article_path(title: str, filemap: pd.DataFrame):
-    fp = filemap.query('filename == @title.lower().strip()')['path'].iloc[0]
-    return fp
-
-
-def get_article_text(fp):
-    with open(fp) as fin:
-        text = fin.read()
-    return text
-
-
-def two_sets_stats(arr1, arr2):
-    print(f'init shapes: {len(arr1), len(arr2)}')
-    s1 = set(arr1)
-    s2 = set(arr2)
-    print(f'unique elements: {len(s1), len(s2)}')
-    print(f's1 & s2: {len(s1 & s2)}')
-    print(f's1 ^ s2: {len(s1 ^ s2)}')
-    print(f's1 - s2: {len(s1 - s2)}')
-    print(f's2 - s1: {len(s2 - s1)}')
+from utils import get_article_path, get_article_text
 
 
 class WikiQAInputExample(InputExample):
@@ -51,7 +29,8 @@ class WikiQADataset(Dataset):
         assert 0 <= ix < len(self)
         query, article_title, article_id = self.examples.iloc[ix][[
             'query', 'title', 'article_id']]
-        article = get_article_text(get_article_path(article_title, filemap=self.filemap))
+        article = get_article_text(get_article_path(
+            article_title, filemap=self.filemap))
         example = WikiQAInputExample(
             texts=[query, article], label=1, article_id=article_id)
         return example
