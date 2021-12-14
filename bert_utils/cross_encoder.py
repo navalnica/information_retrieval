@@ -37,14 +37,16 @@ class CustomCEBinaryClassificationEvaluator:
             out_txt = ":"
 
         logger.info("CEBinaryClassificationEvaluator: Evaluating the model on " + " dataset" + out_txt)
-        pred_scores = model.predict(self.sentence_pairs, batch_size=self.batch_size, convert_to_numpy=True, show_progress_bar=False)
+        pred_scores = model.predict(
+            self.sentence_pairs, batch_size=self.batch_size, 
+            convert_to_numpy=True, show_progress_bar=True
+        )
         output_scores = CustomBinaryClassificationEvaluator.find_best_f1_and_threshold(pred_scores, self.labels, True)
 
         logger.info("F1:                 {:.2f}\t(Threshold: {:.4f})".format(output_scores['f1'] * 100, output_scores['f1_threshold']))
         logger.info("Accuracy:           {:.2f}".format(output_scores['accuracy'] * 100))
         logger.info("Precision:          {:.2f}".format(output_scores['precision'] * 100))
         logger.info("Recall:             {:.2f}".format(output_scores['recall'] * 100))
-        logger.info("Average Precision:  {:.2f}\n".format(output_scores['ap'] * 100))
 
         if output_path is not None and self.write_csv:
             csv_path = os.path.join(output_path, self.csv_file)
