@@ -27,12 +27,9 @@ class WikiQADataset(Dataset):
 
     def __getitem__(self, ix):
         assert 0 <= ix < len(self)
-        query, article_title, article_id = self.examples.iloc[ix][[
-            'query', 'title', 'article_id']]
-        article = get_article_text(get_article_path(
-            article_title, filemap=self.filemap))
-        example = WikiQAInputExample(
-            texts=[query, article], label=1, article_id=article_id)
+        query, article_title, article_id, label = self.examples.iloc[ix][['query', 'title', 'article_id', 'label']]
+        article = get_article_text(get_article_path(article_title, filemap=self.filemap))
+        example = WikiQAInputExample(texts=[query, article], label=label, article_id=article_id)
         return example
 
 
@@ -86,37 +83,36 @@ def generate_negative_examples(true_article_id: int, k: int, article_ids: set):
     return random.sample(list(article_ids - {true_article_id}), k=k)
 
 
-def add_negative_samples_to_val_set(
-    labels_val: pd.DataFrame, val_neg_to_pos_factor: int,
-    all_article_ids: set, filemap: pd.DataFrame
+def add_negative_samples_to_labels_df(
+    labels_df: pd.DataFrame, 
+    neg_to_pos_factor: int,
+    all_article_ids: set, 
+    filemap: pd.DataFrame
 ):
-    labels_val = labels_val.copy()
-    labels_val['label'] = 1
+    labels_df = labels_df.copy()
+    labels_df['label'] = 1
 
     # generate negative examples
 
-    labels_val_neg = labels_val[['query', 'article_id']].copy()
+    labels_neg_df = labels_df[['query', 'article_id']].copy()
 
-    labels_val_neg['negative_article_ids'] = labels_val_neg['article_id'].apply(
+    labels_neg_df['negative_article_ids'] = labels_neg_df['article_id'].apply(
         lambda article_id: generate_negative_examples(
-            true_article_id=article_id, k=val_neg_to_pos_factor, article_ids=all_article_ids
+            true_article_id=article_id, k=neg_to_pos_factor, article_ids=all_article_ids
         )
     )
 
-    labels_val_neg.drop(columns='article_id', inplace=True)
-    labels_val_neg.rename(
-        columns={'negative_article_ids': 'article_id'}, inplace=True)
-    labels_val_neg = labels_val_neg.explode('article_id')
-    labels_val_neg['article_id'] = labels_val_neg['article_id'].astype(
-        'int')  # fix type after `explode`
-    labels_val_neg['label'] = 0
+    labels_neg_df.drop(columns='article_id', inplace=True)
+    labels_neg_df.rename(columns={'negative_article_ids': 'article_id'}, inplace=True)
+    labels_neg_df = labels_neg_df.explode('article_id')
+    labels_neg_df['article_id'] = labels_neg_df['article_id'].astype('int')  # fix type after `explode`
+    labels_neg_df['label'] = 0
     # add 'title' column
-    labels_val_neg = labels_val_neg.merge(
+    labels_neg_df = labels_neg_df.merge(
         filemap[['filename', 'article_id']], on='article_id', how='inner'
     ).rename(columns={'filename': 'title'})
-    assert labels_val_neg.shape[0] == labels_val.shape[0] * \
-        val_neg_to_pos_factor
+    assert labels_neg_df.shape[0] == labels_df.shape[0] * neg_to_pos_factor
 
     # concatenate tables
-    res = pd.concat([labels_val, labels_val_neg], axis=0, ignore_index=True)
+    res = pd.concat([labels_df, labels_neg_df], axis=0, ignore_index=True)
     return res
